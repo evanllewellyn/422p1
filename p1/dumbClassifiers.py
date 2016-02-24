@@ -100,13 +100,46 @@ class FirstFeatureClassifier(BinaryClassifier):
         check the first feature and make a classification decision based on it
         """
 
-        ### TODO: YOUR CODE HERE
-        util.raiseNotDefined()
+        if X[0] > 0:
+            return self.classForPos
+        else:
+            return self.classForNeg
 
     def train(self, X, Y):
         '''
         just figure out what the most frequent class is for each value of X[:,0] and store it
         '''
 
-        ### TODO: YOUR CODE HERE
-        util.raiseNotDefined()
+        index = 0
+
+        num_xpos_ypos = 0
+        num_xpos_yneg = 0
+        num_xneg_ypos = 0
+        num_xneg_yneg = 0
+
+        # Iterate through each element of X[:,0], compare to Y[:]
+        for item in X:
+            if X[index,0] > 0:
+                if Y[index] > 0:
+                    num_xpos_ypos += 1  # X is 1, Y is 1
+                else:
+                    num_xpos_yneg += 1  # X is 1, Y is -1
+            else:
+                if Y[index] > 0:
+                    num_xneg_ypos += 1  # X is 0, Y is 1
+                else:
+                    num_xneg_yneg += 1  # X is 0, Y is -1
+
+            index += 1
+
+        # Compare counted results if X[0] > 0
+        if num_xpos_ypos >= num_xpos_yneg:
+            self.classForPos = 1
+        else:
+            self.classForPos = -1
+
+        # Compare counted results if X[0] <= 0
+        if num_xneg_ypos >= num_xneg_yneg:
+            self.classForNeg = 1
+        else:
+            self.classForNeg = -1
