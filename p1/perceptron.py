@@ -1,7 +1,6 @@
 """
 In perceptron.py, you will implement the perceptron algorithm for
-binary classification.  You will implement both the vanilla perceptron
-updates as well as the averaged perceptron updates.
+binary classification.  You will implement both the vanilla perceptron.
 """
 
 from numpy import *
@@ -77,9 +76,9 @@ class Perceptron(BinaryClassifier):
             self.numUpd  = self.numUpd  + 1
 
             # perform an update
-            self.weights = util.raiseNotDefined()    ### TODO: YOUR CODE HERE
+            self.weights = self.weights + Y * X
 
-            self.bias    = util.raiseNotDefined()    ### TODO: YOUR CODE HERE
+            self.bias    = self.bias + Y
 
 
     def nextIteration(self):
