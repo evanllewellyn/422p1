@@ -9,6 +9,8 @@ from numpy import *
 
 from binary import *
 import util
+import numpy
+import copy
 
 class DT(BinaryClassifier):
     """
@@ -63,9 +65,15 @@ class DT(BinaryClassifier):
         at 0.5, so <0.5 means left branch and >=0.5 means right
         branch.
         """
+        #returning label if leaf
+        if self.isLeaf == True:
+            return self.label
 
-        ### TODO: YOUR CODE HERE
-        util.raiseNotDefined()
+        #based on current feature and current test data, recursively continue predicting into the tree 
+        if X[self.feature] >= .5:
+            return self.right.predict(X)
+        else:
+            return self.left.predict(X)   
 
     def trainDT(self, X, Y, maxDepth, used):
         """
@@ -80,10 +88,22 @@ class DT(BinaryClassifier):
         if maxDepth <= 0 or len(util.uniq(Y)) <= 1:
             # we'd better end at this point.  need to figure
             # out the label to return
-            self.isLeaf = util.raiseNotDefined()    ### TODO: YOUR CODE HERE
-
-            self.label  = util.raiseNotDefined()    ### TODO: YOUR CODE HERE
-
+            
+            #setting self as leaf
+            self.isLeaf = True
+            curY = 0
+            curN = 0
+            #finding out counts of Y or N for remaining training results (narrowed down to apply to features en route to leaf
+            for x in range(len(Y)):
+                if Y[x] == 1:
+                    curY += 1
+                else:    
+                    curN += 1
+            #setting leaf label according to most popular result for leaf's appropriate features.
+            if curN > curY:
+                self.label = -1.0
+            else :
+                self.label = 1.0            
 
         else:
             # we need to find a feature to split on
@@ -96,16 +116,58 @@ class DT(BinaryClassifier):
 
                 # suppose we split on this feature; what labels
                 # would go left and right?
-                leftY  = util.raiseNotDefined()    ### TODO: YOUR CODE HERE
+                #variables to keep track of features data:
+                #leftYes = training data has value <.5 for feature and corresponding training result is 1.0
+                #leftNo = training data has value <.5 for feature and corresponding training result is -1.0
+                #rightYes = training data has value >=.5 for feature and corresponding training result is 1.0
+                #rightNo = training data has value >=.5 for feature and corresponding training result is -1.0
+                leftYes = 0
+                leftNo = 0
+                rightYes = 0
+                rightNo = 0
 
-                rightY = util.raiseNotDefined()    ### TODO: YOUR CODE HERE
+                for x in range(N):
+                    if X[x,d] >= .5:
+                        if Y[x] == 1.0:
+                            rightYes += 1;
+                        else:
+                            rightNo += 1;
+                    else:
+                        if Y[x] == 1.0:
+                            leftYes += 1;
+                        else:
+                            leftNo += 1;                            
 
+                #based on above info determining our prediction for feature values 
+                if leftYes > leftNo:
+                    leftY = 1
+                else: 
+                    leftY = -1    
+               
+                if rightYes > rightNo:
+                    rightY = 1
+                else: 
+                    rightY = -1
+
+                #calculating amount of errors for current feature based off of running 
+                #training data through a loss function.
+                # l(y,y') = {1 | y=y'   }
+                #           {0 | otherwise }
+                # where y = truth of training data, and y' = our current features prediction 
+                errorTracker = 0    
+                for x in range(N):
+                    if X[x,d] >= .5:
+                        featPred = rightY
+                    else: 
+                        featPred = leftY   
+                       
+                    if featPred != Y[x]:
+                        errorTracker += 1
 
                 # we'll classify the left points as their most
                 # common class and ditto right points.  our error
                 # is the how many are not their mode.
-                error = util.raiseNotDefined()    ### TODO: YOUR CODE HERE
-
+                error = errorTracker    
 
                 # check to see if this is a better error rate
                 if error <= bestError:
@@ -118,20 +180,45 @@ class DT(BinaryClassifier):
                 self.label  = util.mode(Y)
 
             else:
-                self.isLeaf  = util.raiseNotDefined()    ### TODO: YOUR CODE HERE
+                
+                #now that weve found best available feature, we need to make new 
+                #subsets of training data to pass into left/right according to our feature
+                #find what indexes need to be deleted for each side and uses numpy.delete to 
+                #remove corresponding indexes from current training data, forming new training data for each side.
+                newXleftIdx = []
+                newXrightIdx = []
+                newYleftIdx = []
+                newYrightIdx = []
+                for x in range(N): 
+                    if X[x,bestFeature] >= .5:
+                        newXleftIdx.append(x)
+                        newYleftIdx.append(x)
+                    else:    
+                        newXrightIdx.append(x)
+                        newYrightIdx.append(x)
+                        
+                newXleft = numpy.delete(X, newXleftIdx, 0)
+                newXright = numpy.delete(X, newXrightIdx, 0)
+                newYleft = numpy.delete(Y, newYleftIdx, 0)
+                newYright = numpy.delete(Y, newYrightIdx, 0)
 
-                self.feature = util.raiseNotDefined()    ### TODO: YOUR CODE HERE
+                used.append(bestFeature)
+
+                newUsedRight = copy.deepcopy(used)
+                newUsedLeft = copy.deepcopy(used)
+            
+                self.feature = bestFeature
+                self.isLeaf = False
+
 
 
                 self.left  = DT({'maxDepth': maxDepth-1})
                 self.right = DT({'maxDepth': maxDepth-1})
-                # recurse on our children by calling
-                #   self.left.trainDT(...) 
-                # and
-                #   self.right.trainDT(...) 
-                # with appropriate arguments
-                ### TODO: YOUR CODE HERE
-                util.raiseNotDefined()
+             
+                #going deeper into the tree to form model, using new seperate training data for left/right side 
+                #according to new feature selected. 
+                self.left.trainDT(newXleft, newYleft, maxDepth-1, newUsedLeft)
+                self.right.trainDT(newXright, newYright, maxDepth-1, newUsedRight)
 
     def train(self, X, Y):
         """
